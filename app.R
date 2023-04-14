@@ -1,6 +1,10 @@
+library(shinydashboard)
+library(shinythemes)
+library(plyr)
 library(dplyr)
-library(gridExtra)
 library(grid)
+library(gridExtra)
+library(ggplot2)
 
 source("data/clean_data.R")
 
@@ -9,10 +13,13 @@ dep_options <- c("No Filter", "has Dependents", "no Dependents")
 serv_options <- c("No Filter", "Yes", "No")
 
 ui <- fluidPage(
-  
+  theme = shinytheme("cosmo"),
+  img(src = "https://images.theconversation.com/files/495174/original/file-20221114-13-16khi0.jpg?ixlib=rb-1.1.0&q=45&auto=format&w=1200&h=900.0&fit=crop",
+      width = "100%", height = "auto", style = "max-height:300px;"),
   dashboardPage(
+    
     dashboardHeader(title = "Credit card Demographic"),
-    dashboardSidebar( width = 160,
+    dashboardSidebar(width = 160,
                       sidebarMenu(style = "position: fixed; width:150px;",
                                   selectInput("gender", 
                                               label = "Gender:",
@@ -28,9 +35,10 @@ ui <- fluidPage(
     ),
     
     dashboardBody(
+      
       fluidRow(
         box(title = "Credit card Demographic", width = 20, solidHeader = TRUE, status = "primary", color = "#286192",
-            box(title = "This will contain the number of customer attrited and existing and according to what the customer chooses the graph will change", width = 20, status = "primary"),
+            box(title = "This contains the number of existing customers and attrired customers. The graph will change according to what the customer selects", width = 18, status = "primary"),
             fluidRow(
               box(align = "center",
                   title = NULL, 
@@ -41,7 +49,7 @@ ui <- fluidPage(
             fluidRow(
               column(width = 4,
                      box(title = "All Customers", width = 20, solidHeader = TRUE, status = "primary",
-                         box(title = "This will contain the number of customer in the dataset", width = 100, status = "primary"),
+                         box(title = "Below is the number of customers in the data set", width = 100, status = "primary"),
                          box(title = "Number of Customers", width = 20, status = "primary", infoBoxOutput("customerCountNoFilter")),
                         # Info boxes give figures such as percent of total for the given datatypes.
                          ))
@@ -51,6 +59,7 @@ ui <- fluidPage(
       fluidRow(
         box(title = "Card Category", width = 20, solidHeader = TRUE, status = "primary",
             fluidRow(
+              box(title = "This contains the number of card categories in the dataset. The graph will change according to what the customer selects.", width = 100, status = "primary"),
               tabBox(width = 20, title = "Card Category", side = "right",
                      tabPanel("Card Category",
                               fluidRow(
@@ -61,6 +70,7 @@ ui <- fluidPage(
             ),
             fluidRow(
               tabBox(width = 20, title = "Charges", side = "right",
+                     box(title = "This contains the charges in the dataset. It will also change based on what the customer selects from the filter.", width = 100, status = "primary"),
                      tabPanel("Monthly Charges",
                               fluidRow(
                                 box(width = 20, title = NULL, status = NULL, plotOutput("plot9"))
@@ -75,13 +85,15 @@ ui <- fluidPage(
             ),
             column(width = 4,
                    box(title = "All Customers", width = 20, solidHeader = TRUE, status = "primary",
-                       box(title = "Total Monthly Charges", width = 20, status = "primary", infoBoxOutput("totalMonthlyChargesNoFilter")),
-                       box(title = "Average Monthly Charges", width = 20, status = "primary", infoBoxOutput("avgMonthlyChargesNoFilter"))               ))
+                       box(title = "Below are the number of charges in the data set", width = 100, status = "primary"),
+                       box(title = "Total Monthly Charges", width = 20, status = "primary", infoBoxOutput("totalMonthlyChargesNoFilter"))
+                                      ))
             
         )),
       fluidRow(
         box(title = "Months on book", width = 20, solidHeader = TRUE, status = "primary",
             fluidRow(
+              box(title = "This contains months on book of customer. It will also change based on what the customer selects from the filter.", width = 100, status = "primary"),
               tabBox(width = 20, title = "Months on book", side = "right",
                      tabPanel("Histogram",
                               fluidRow(
@@ -99,6 +111,7 @@ ui <- fluidPage(
       fluidRow(
         box(title = "Education Level", width = 20, solidHeader = TRUE, status = "primary",
             fluidRow(
+              box(title = "This contains the education level of customer. It will also change based on what the customer selects from the filter.", width = 100, status = "primary"),
               tabBox(width = 20, title = "Type of education", side = "right",
                      tabPanel("popular education",
                               fluidRow(
@@ -117,7 +130,7 @@ ui <- fluidPage(
     )
   )
 )
-
+# server function
 server <- function(input, output) {
   # it is a reactive value, which means that it is updated every time the server runs
   rv = reactiveValues()
@@ -177,7 +190,7 @@ server <- function(input, output) {
     plot1 <- ggplot(rv$dataset, aes(x = Churn, fill = Churn)) +
       geom_bar(position = "dodge", fill = c("#f0ad4e", "#5cb85c"), color = c("#ba7412", "#376e37")) +
       coord_flip() +
-      geom_text(aes(label = paste(round(..count../nrow(rv$dataset)*100,2), "%")),
+      geom_text(aes(label = paste(round(after_stat(count)/nrow(rv$dataset)*100,2), "%")),
                 stat = "count",
                 position = 'dodge',
                 hjust = -0.5,
@@ -210,7 +223,7 @@ server <- function(input, output) {
     p1 <- ggplot(rv$dataset, aes(x=PaymentMethod, fill = factor(PaymentMethod)))+
       geom_bar(position = "dodge",  fill = c("#99bcdb","#5b94c5","#337ab7","#286192"), color = "#1e496d") +
       coord_flip() +
-      geom_text(aes(label = paste(round(..count../nrow(rv$dataset)*100,2), "%")),
+      geom_text(aes(label = paste(round(after_stat(count)/nrow(rv$dataset)*100,2), "%")),
                 stat = "count", position = "dodge", hjust = -0.1) +
       labs(title = "All Customers", fill = '')+
       theme_minimal() +
@@ -259,12 +272,12 @@ server <- function(input, output) {
     p1 <- ggplot(rv$dataset, aes(x=PhoneServ, fill = factor(PhoneServ)))+
       geom_bar(position = "dodge",  fill = c("#99bcdb","#5b94c5","#286192"), color = "#1e496d") +
       coord_flip() +
-      geom_text(aes(label = paste(round(..count../nrow(rv$dataset)*100,2), "%")),
+      geom_text(aes(label = paste(round(after_stat(count)/nrow(rv$dataset)*100,2), "%")),
                 stat = "count", position = "dodge", hjust = -0.1) +
       labs(title = "All Customers", fill = '')+
       theme_minimal() +
       theme(legend.position = "none",
-            axis.ticks=element_blank(),
+            axis.ticks=element_blank(), 
             axis.title=element_blank(),
             panel.grid=element_blank(),
             panel.border=element_blank())
@@ -276,7 +289,7 @@ server <- function(input, output) {
     p1 <- ggplot(rv$dataset, aes(x=Streaming, fill = factor(Streaming)))+
       geom_bar(position = "dodge",  fill = c("#99bcdb","#5b94c5","#337ab7","#286192"), color = "#1e496d") +
       coord_flip() +
-      geom_text(aes(label = paste(round(..count../nrow(rv$dataset)*100,2), "%")),
+      geom_text(aes(label = paste(round(after_stat(count)/nrow(rv$dataset)*100,2), "%")),
                 stat = "count", position = "dodge", hjust = -0.1) +
       labs(title = "All Customers", fill = '')+
       theme_minimal() +
